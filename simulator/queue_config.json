@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DhruvDrishtiEdgeQueueConfig",
+  "description": "Store-and-forward queue configuration for Antarctic station edge gateways during satellite VSAT outages",
+  "version": "1.0.0",
+  "edge_gateway": {
+    "station_ids": ["BHARATI", "MAITRI"],
+    "sqlite_db_path": "simulator/offline_queue.db",
+    "max_queue_size_records": 500000,
+    "eviction_policy": "FIFO_DROP_ROUTINE_PRESERVE_CRITICAL"
+  },
+  "vsat_link_monitor": {
+    "ping_endpoint": "https://telemetry.aws.internal/health",
+    "health_check_interval_seconds": 10,
+    "consecutive_failures_for_offline": 3,
+    "reconnect_stabilization_seconds": 15
+  },
+  "sync_engine": {
+    "batch_size_records": 250,
+    "flush_cadence_seconds": 2,
+    "retry_backoff": {
+      "initial_interval_ms": 500,
+      "multiplier": 1.5,
+      "max_interval_ms": 30000,
+      "max_retries": 10
+    },
+    "watermark": {
+      "strategy": "MAX_OBSERVED_AT",
+      "deduplication_keys": ["station_id", "source", "observed_at"]
+    }
+  },
+  "priority_tiers": {
+    "P0_CRITICAL": {
+      "description": "Structural stress, generator failure, fuel leak, HVAC depressurization",
+      "flush_order": 1,
+      "compression": "none"
+    },
+    "P1_METEOROLOGY": {
+      "description": "NPDC Automatic Weather Station observations (wind vectors, barometric pressure, temperature)",
+      "flush_order": 2,
+      "compression": "gzip"
+    },
+    "P2_ROUTINE": {
+      "description": "Routine diagnostic heartbeats, solar irradiance, ambient humidity",
+      "flush_order": 3,
+      "compression": "gzip"
+    }
+  }
+}
