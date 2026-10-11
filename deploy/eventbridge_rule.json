@@ -1,0 +1,28 @@
+{
+  "RuleName": "DhruvDrishtiAnomalyEventRule",
+  "EventBusName": "default",
+  "Description": "Routes critical meteorological and station equipment anomalies detected by Dhruv Drishti to Amazon SNS and AWS Lambda",
+  "EventPattern": {
+    "source": ["dhruv.drishti.telemetry"],
+    "detail-type": ["StationTelemetryAnomalyAlert"],
+    "detail": {
+      "severity": ["HIGH", "CRITICAL"],
+      "station_id": ["BHARATI_01", "MAITRI_02"]
+    }
+  },
+  "Targets": [
+    {
+      "Id": "SnsUrgentDispatchTarget",
+      "Arn": "arn:aws:sns:us-east-1:123456789012:DhruvDrishtiUrgentAlerts",
+      "RetryPolicy": {
+        "MaximumRetryAttempts": 5,
+        "MaximumEventAgeInSeconds": 3600
+      }
+    },
+    {
+      "Id": "LambdaIncidentTriageTarget",
+      "Arn": "arn:aws:lambda:us-east-1:123456789012:function:dhruv-incident-orchestrator"
+    }
+  ],
+  "State": "ENABLED"
+}
