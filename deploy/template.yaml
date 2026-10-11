@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Dhruv Drishti (ध्रुव दृष्टि)
+  Cloud-native extreme climate digital twin & polar life-support architecture.
+  Built for WeMakeDevs x AWS Environmental Hacks 2026.
+
+Globals:
+  Function:
+    Timeout: 15
+    MemorySize: 256
+    Runtime: python3.11
+    Environment:
+      Variables:
+        STAGE: prod
+        PROJECT: dhruv-drishti
+
+Resources:
+  # ------------------------------------------------------------
+  # 1. Edge Telemetry Storage (S3 Archive)
+  # ------------------------------------------------------------
+  TelemetryArchiveBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'dhruv-drishti-telemetry-${AWS::AccountId}-${AWS::Region}'
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToGlacier
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 90
+                StorageClass: GLACIER
+
+  # ------------------------------------------------------------
+  # 2. Emergency Alert Notification Topic (SNS)
+  # ------------------------------------------------------------
+  EmergencyAlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: dhruv-drishti-critical-alerts
+      DisplayName: Dhruv Drishti Mission Control Alerts
+
+  # ------------------------------------------------------------
+  # 3. Real-Time Telemetry Processing Lambda Function
+  # ------------------------------------------------------------
+  TelemetryIngestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../server/
+      Handler: app.services.lambda_handler.handler
+      Description: Ingests Antarctic station telemetry from IoT Core and evaluates anomaly thresholds
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref TelemetryArchiveBucket
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt EmergencyAlertTopic.TopicName
+      Events:
+        IoTRule:
+          Type: IoTRule
+          Properties:
+            Sql: "SELECT * FROM 'polar/stations/+/telemetry'"
+            AwsIotSqlVersion: '2016-03-23'
+
+  # ------------------------------------------------------------
+  # 4. Amazon ECS Fargate Task Definition for Digital Twin API
+  # ------------------------------------------------------------
+  ApiTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: dhruv-drishti-api
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ContainerDefinitions:
+        - Name: dhruv-drishti-backend
+          Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/dhruv-drishti-server:latest'
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8000
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /ecs/dhruv-drishti
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+
+Outputs:
+  TelemetryArchiveBucketName:
+    Description: S3 Archive Bucket for NPDC observations
+    Value: !Ref TelemetryArchiveBucket
+  EmergencyAlertTopicArn:
+    Description: SNS Topic ARN for mission-control alerts
+    Value: !Ref EmergencyAlertTopic
