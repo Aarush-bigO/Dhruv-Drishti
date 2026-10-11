@@ -1,0 +1,96 @@
+================================================================================
+POLAR TWIN — UPDATE CHANGELOG (VERSION 1.0 — NPDC REAL DATA & UI UPGRADE)
+================================================================================
+Date: 2026-08-26
+Project: Digital Twin for Indian Antarctic Research Stations (Bharati & Maitri)
+Source: National Polar Data Center (NPDC / NCPOR) Real AWS Dataset Integration
+
+--------------------------------------------------------------------------------
+1. REAL NPDC BHARATI AWS INTEGRATION & DATA PIPELINE
+--------------------------------------------------------------------------------
+- Real Meteorological Datasets:
+  * Integrated real NCPOR AWS observations for Bharati Station (Air Temperature, 
+    Atmospheric Pressure, Wind Speed, Wind Direction, Relative Humidity).
+  * Structured data folders: data/raw/npdc/bharati/, data/processed/, data/manifests/.
+  * Seeded authentic 2026 Bharati AWS cyclone observation dataset.
+
+- Database Models & Schema (SQLAlchemy):
+  * server/app/models/weather_raw.py: Raw NPDC download archive with SHA256 hashing.
+  * server/app/models/weather.py: Normalized weather observations with composite 
+    uniqueness constraint (station_id + source + observed_at) preventing duplicate rows.
+  * server/app/models/weather_anomaly.py: Meteorological anomaly event logging.
+
+- Ingestion & Source-State Machine (Watermark Architecture):
+  * server/app/services/npdc_client.py: Dynamic UTC date querying, date-rollover 
+    coverage (23:00-01:00 UTC), unit conversion (knots -> m/s, mbar -> hPa).
+  * 4-State Freshness Machine: LIVE (< 15m), DELAYED (no new source row), STALE (> 45m), 
+    OFFLINE (>= 3 consecutive failures).
+  * server/app/services/weather_ingestion.py: Watermark comparison (MAX(observed_at)), 
+    zero fake-point synthesis, deduplication, and WebSocket broadcasting.
+
+- Data Quality & Physical Validation:
+  * server/app/services/weather_quality.py: Physical limit validation, impossible 
+    rate-of-change jump detection (> 12°C/10m), and frozen sensor detection.
+
+--------------------------------------------------------------------------------
+2. DUAL-LAYER MACHINE LEARNING ANOMALY INTELLIGENCE
+--------------------------------------------------------------------------------
+- Environmental Weather Anomaly Model (Isolation Forest):
+  * server/app/services/weather_anomaly_service.py: Evaluates multi-variate weather 
+    patterns trained on authentic Antarctic AWS observations.
+  * Domain-Accurate Anomaly Classifiers: RAPID_PRESSURE_DROP, HIGH_WIND_EVENT, 
+    EXTREME_COLD_EVENT, SENSOR_FREEZE, UNUSUAL_WEATHER_PATTERN.
+  * Feature Engineering: Circular wind direction sine/cosine encoding, 1h pressure delta, 
+    and diurnal/seasonal cyclical features.
+
+- Machinery Equipment Anomaly Model:
+  * server/app/services/anomaly_service.py & ml_engine/src/inference.py: Updated 
+    inference pipeline to dynamically score incoming telemetry payloads (RPM, vibration, 
+    indoor temp, battery SOC, fuel level) instead of static arrays.
+
+--------------------------------------------------------------------------------
+3. WORKERS & CLI COMMANDS
+--------------------------------------------------------------------------------
+- server/app/workers/npdc_poller.py: Background polling scheduler (10 min cycle).
+- server/app/workers/weather_replay.py: Historical event replay worker (1x, 5x, 10x, 20x).
+- server/app/commands/import_npdc.py: Dedicated CLI tool for importing historical CSV/Excel 
+  datasets with validation reports and SHA256 integrity checks.
+
+--------------------------------------------------------------------------------
+4. WEATHER REST API & WEBSOCKET BROADCASTING
+--------------------------------------------------------------------------------
+- server/app/api/v1/weather.py:
+  * GET  /api/v1/weather/latest/{station_id}   -> Real-time observation + freshness status
+  * GET  /api/v1/weather/history/{station_id}  -> Dynamic time range observations for charts
+  * GET  /api/v1/weather/anomalies/{station_id}-> Flagged meteorological anomaly log
+  * GET  /api/v1/weather/status/{station_id}   -> Source state machine diagnostics
+  * POST /api/v1/weather/replay                -> Historical storm replay control
+
+--------------------------------------------------------------------------------
+5. FRONTEND DIGITAL TWIN & STATION UI MODERNIZATION
+--------------------------------------------------------------------------------
+- Top Mission-Control Navigation:
+  * Real-time ticking UTC Satellite Link clock (SATELLITE LINK HH:MM UTC).
+  * Direct access to Overview, Stations, Research & What-If, and Logistics.
+
+- Polar Satellite Overview (Landing Page):
+  * High-resolution top-down orthographic satellite projection of Antarctica.
+  * Interactive glowing station markers for Maitri and Bharati.
+  * Marine supply tracking (RV Saraswati with radar pulse along shipping lane).
+  * Left intelligence panel with live weather telemetry and regional health.
+
+- Upgraded Station Digital Twin View:
+  * Sleek cybernetic blueprint layout with illuminated room states and power grid conduits.
+  * Dual-Station NPDC Support: Full 24-hour observation time series & wind rose models for BOTH Bharati Station and Maitri Station.
+  * New Tab: "NPDC Weather AWS" featuring:
+    1. DataFreshness.jsx: Live / Delayed / Stale / Replay status pills & source labels.
+    2. ReplayControls.jsx: Historical 25 Aug 2026 cyclone playback toolbar.
+    3. WeatherCards.jsx: Air Temp (°C), Barometric Pressure (hPa), Wind (m/s & knots), Humidity (%).
+    4. WeatherChart.jsx: 24-hour interactive trend graphs matching NCPOR live web design.
+    5. WindRoseRadar.jsx: 16-sector polar wind direction and velocity distribution radar.
+    6. WeatherAnomalyPanel.jsx: Environmental Threat Index meter and meteorological alert feed.
+  * Modernized "Equipment Telemetry" Tab:
+    - Full Station Monitored Asset Overview listing all 9 equipment units (Generators, Fuel Tanks, HVAC, Batteries, Life Support, Comms) with live RPM, Vibration, Fuel, and Battery status pills.
+    - Deep Diagnostic Mode with performance time-series charts, ML Failure Risk Gauge, and Recommended Actions.
+================================================================================
+

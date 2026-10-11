@@ -1,0 +1,303 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme transition */
+*, *::before, *::after {
+  transition: background-color 0.3s ease, color 0.2s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Light mode (default) */
+body {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: 0;
+}
+
+/* Dark mode */
+.dark body {
+  background-color: #0a0f1e;
+  color: #f1f5f9;
+}
+
+/* Leaflet dark fix (station twin / leftover map views) */
+.dark .leaflet-container { background: #111827 !important; }
+.dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1); }
+
+.polar-continent {
+  filter: contrast(1.12) saturate(0.78) brightness(1.04);
+}
+
+/* The supplied satellite crop has a dark square around its map artwork. */
+.map-artwork {
+  -webkit-mask-image: radial-gradient(ellipse 48% 74% at 52% 50%, #000 52%, rgba(0, 0, 0, 0.92) 72%, transparent 100%);
+  mask-image: radial-gradient(ellipse 48% 74% at 52% 50%, #000 52%, rgba(0, 0, 0, 0.92) 72%, transparent 100%);
+}
+
+/* Custom scrollbar for light mode */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+/* Alert cycling progress bar animation */
+@keyframes alertProgress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+.alert-progress {
+  animation: alertProgress 4s linear forwards;
+}
+
+/* Overview page: pinned aurora/mountain backdrop behind nav + content */
+.overview-shell {
+  --overview-parallax-x: 0px;
+  --overview-parallax-y: 0px;
+  background-color: #050b14;
+}
+.overview-shell::before {
+  content: "";
+  position: fixed;
+  inset: -8% -6%;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #050b14;
+  background-image: url("/assets/polar-aurora-bg.png");
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  transform: translate3d(var(--overview-parallax-x), var(--overview-parallax-y), 0);
+  will-change: transform;
+}
+.overview-shell > * {
+  position: relative;
+  z-index: 1;
+}
+.overview-shell nav {
+  background-color: rgba(7, 13, 24, 0.72);
+}
+@media (max-height: 720px) {
+  .overview-shell::before {
+    background-position: center 18%;
+  }
+}
+
+.interactive-globe-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+}
+
+.interactive-globe-canvas:active {
+  cursor: grabbing;
+}
+
+.globe-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform, opacity;
+}
+
+.globe-india-label {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 126px;
+  padding: 0.42rem 0.7rem;
+  color: #e6f7ff;
+  border: 1px solid rgba(34, 211, 238, 0.72);
+  border-radius: 0.55rem;
+  background: rgba(4, 25, 41, 0.83);
+  box-shadow: 0 0 22px rgba(14, 165, 233, 0.26);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(10px);
+  transition: opacity 180ms ease;
+}
+
+.globe-india-label strong { font-size: 0.75rem; }
+.globe-india-label .globe-external { color: #67e8f9; font-size: 1rem; }
+.globe-india-label small {
+  grid-column: 1 / -1;
+  color: #7dd3fc;
+  font-size: 0.6rem;
+  letter-spacing: 0.02em;
+}
+
+.globe-station-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 136px;
+  padding: 0.35rem 0.58rem 0.35rem 0.42rem;
+  color: #effaff;
+  border: 1px solid currentColor;
+  border-radius: 0.6rem;
+  background: rgba(3, 21, 35, 0.84);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.36);
+  cursor: pointer;
+  text-align: left;
+  backdrop-filter: blur(12px);
+  transition: opacity 160ms ease, box-shadow 180ms ease, background-color 180ms ease, scale 180ms ease;
+}
+
+.globe-station-label:hover,
+.globe-station-label:focus-visible {
+  z-index: 5;
+  scale: 1.04;
+  background: rgba(9, 37, 57, 0.97);
+  outline: none;
+}
+
+.globe-station-rose { color: #fb7185; }
+.globe-station-rose:hover, .globe-station-rose:focus-visible { box-shadow: 0 0 25px rgba(244, 63, 94, 0.38); }
+.globe-station-emerald { color: #2dd4bf; }
+.globe-station-emerald:hover, .globe-station-emerald:focus-visible { box-shadow: 0 0 25px rgba(45, 212, 191, 0.35); }
+
+.globe-station-beacon {
+  position: relative;
+  display: block;
+  width: 0.62rem;
+  height: 0.62rem;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  box-shadow: 0 0 14px currentColor;
+}
+
+.globe-station-beacon::after {
+  position: absolute;
+  inset: 0.12rem;
+  border-radius: 999px;
+  background: currentColor;
+  content: '';
+}
+
+.globe-station-copy { display: grid; gap: 0.04rem; }
+.globe-station-copy strong { color: #f8fafc; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.09em; text-transform: uppercase; }
+.globe-station-copy small { color: #9ec6e2; font-family: 'JetBrains Mono', monospace; font-size: 0.56rem; letter-spacing: 0.025em; }
+.globe-station-copy em { color: #d5f6ff; font-family: 'JetBrains Mono', monospace; font-size: 0.56rem; font-style: normal; white-space: nowrap; }
+
+.globe-controls {
+  position: absolute;
+  top: 1.55rem;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  gap: 0.45rem;
+  transform: translateX(-50%);
+  color: #bae6fd;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.63rem;
+}
+
+.globe-controls > * {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(14, 116, 144, 0.65);
+  border-radius: 0.45rem;
+  background: rgba(4, 19, 33, 0.76);
+  padding: 0.42rem 0.55rem;
+  backdrop-filter: blur(8px);
+}
+
+.globe-controls button { color: #bae6fd; cursor: pointer; }
+.globe-controls button:hover { border-color: #38bdf8; background: rgba(10, 48, 73, 0.93); }
+
+.globe-gesture-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 57%;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(186, 230, 253, 0.75);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.59rem;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.globe-secondary-label {
+  position: absolute;
+  top: 74%;
+  left: 60%;
+  color: rgba(186, 230, 253, 0.75);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 0.82rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  text-shadow: 0 1px 12px #020617;
+}
+
+.globe-secondary-label span {
+  color: rgba(125, 211, 252, 0.53);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.53rem;
+  font-style: normal;
+}
+
+.globe-close-card {
+  position: absolute;
+  right: 20.5rem;
+  bottom: 3rem;
+  z-index: 5;
+  width: 218px;
+  border: 1px solid rgba(45, 212, 191, 0.64);
+  border-radius: 0.75rem;
+  background: rgba(3, 23, 36, 0.93);
+  box-shadow: 0 0 30px rgba(45, 212, 191, 0.17);
+  padding: 0.8rem;
+  backdrop-filter: blur(12px);
+}
+
+.globe-close-card > div { display: flex; align-items: center; gap: 0.45rem; color: #ccfbf1; font-size: 0.72rem; font-weight: 600; }
+.globe-close-card p { margin: 0.45rem 0 0.65rem; color: #93c5d8; font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; }
+.globe-close-card button { width: 100%; border: 1px solid rgba(45, 212, 191, 0.66); border-radius: 0.4rem; background: rgba(20, 184, 166, 0.12); color: #ccfbf1; cursor: pointer; padding: 0.42rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 600; text-align: left; }
+.globe-close-card button:hover { background: rgba(20, 184, 166, 0.25); }
+.globe-close-card button span { float: right; font-size: 0.9rem; }
+
+@media (max-width: 900px) {
+  .globe-controls { left: auto; right: 1rem; transform: none; }
+  .globe-tier-indicator { display: none; }
+  .globe-gesture-hint { left: auto; right: 1rem; transform: none; }
+  .globe-secondary-label { left: 56%; }
+  .globe-close-card { right: 1rem; bottom: 4.2rem; }
+}
+
+@media (max-width: 640px) {
+  .globe-controls { top: 0.75rem; right: 0.75rem; }
+  .globe-gesture-hint, .globe-india-label, .globe-secondary-label { display: none; }
+  .globe-station-label { min-width: 110px; padding: 0.25rem 0.4rem; }
+  .globe-station-copy strong { font-size: 0.58rem; }
+  .globe-station-copy small, .globe-station-copy em { font-size: 0.48rem; }
+  .globe-close-card { width: 190px; right: 0.75rem; bottom: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .globe-station-label, .globe-india-label { transition: none; }
+}

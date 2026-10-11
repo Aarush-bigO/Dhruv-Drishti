@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+LABEL maintainer="Polar Twin SIH-26060" \
+      description="Antarctic Station Telemetry Simulator"
+
+WORKDIR /app
+
+# Install requests; no other deps needed
+RUN pip install --no-cache-dir requests==2.31.0
+
+COPY telemetry_generator.py .
+
+# Allow backend URL to be overridden at runtime
+ENV BACKEND_URL=http://localhost:8000/api/v1/telemetry/ingest
+
+# Health: just check the script exists
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD python -c "import telemetry_generator" || exit 1
+
+CMD ["python", "-u", "telemetry_generator.py"]

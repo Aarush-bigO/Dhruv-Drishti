@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: polar_twin
+      POSTGRES_USER: polar
+      POSTGRES_PASSWORD: polar_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U polar"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build: ./server
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://polar:polar_secret@db:5432/polar_twin
+      CORS_ORIGINS: '["http://localhost:5173"]'
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./ml_engine:/app/ml_engine
+
+  simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile.simulator
+    environment:
+      BACKEND_URL: http://server:8000/api/v1/telemetry/ingest
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  client:
+    build: ./client
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  pgdata:
