@@ -313,4 +313,4 @@ python scenario_triggers.py reset ALL
 | `/ws/live` | `WS` | Real-time WebSocket feed for live twin visualization |
 | `/docs` | `GET` | Interactive Swagger UI API documentation |
 
-
+---
