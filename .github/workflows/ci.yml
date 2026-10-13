@@ -27,7 +27,7 @@ jobs:
 
       - name: Verify Python syntax & imports
         run: |
-          python -m py_compile server/main.py
+          python -m py_compile server/app/main.py
 
   frontend-build:
     name: Frontend Build Verification
